@@ -75,3 +75,4 @@ app.post("/products", (req: Request, res: Response) => {
 
   res.status(201).send("Produto cadastrado com sucesso!");
 })
+// lala
