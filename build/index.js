@@ -42,7 +42,7 @@ app.post("/users", (req, res) => {
         name,
         email,
         password,
-        createdAt
+        createdAt,
     };
     database_1.users.push(newUser);
     res.status(201).send("Cadastro realizado com sucesso!");
@@ -55,8 +55,48 @@ app.post("/products", (req, res) => {
         name,
         price,
         description,
-        imageUrl
+        imageUrl,
     };
     database_1.products.push(newProduct);
     res.status(201).send("Produto cadastrado com sucesso!");
+});
+// DELETA UM USUÁRIO A PARTIR DO ID PASSADO EM PATH VARIABLES
+app.delete("/user/:id", (req, res) => {
+    const id = req.params.id;
+    const indexDelet = database_1.users.findIndex((user) => user.id === id);
+    if (indexDelet >= 0) {
+        database_1.users.splice(indexDelet, 1);
+    }
+    else {
+        console.log({ message: "Nenhum usuário foi deletado!" });
+    }
+    res.status(200).send({ message: "O usuário foi deletado com sucesso!" });
+});
+// DELETA UM PRODUTO A PARTIR DO ID PASSADO EM PATH VARIABLES
+app.delete("/product/:id", (req, res) => {
+    const id = req.params.id;
+    const indexDelet = database_1.products.findIndex((product) => product.id === id);
+    if (indexDelet >= 0) {
+        database_1.products.splice(indexDelet, 1);
+    }
+    else {
+        console.log({ message: "Nenhum produto foi deletado!" });
+    }
+    res.status(200).send({ message: "O produto foi deletado com sucesso!" });
+});
+// EDITA UM PRODUTO BASEADO NO ID DO PRODUTO
+app.put("/product/:id", (req, res) => {
+    const id = req.params.id;
+    const product = database_1.products.find((product) => product.id === id);
+    if (product) {
+        const { name, price, description, imageUrl } = req.body;
+        product.name = name || product.name;
+        product.price = price || product.price;
+        product.description = description || product.description;
+        product.imageUrl = imageUrl || product.imageUrl;
+    }
+    else {
+        console.log({ message: "Nenhuma informação foi atualizada!" });
+    }
+    res.status(200).send({ message: "Produto atualizado com sucesso!" });
 });
