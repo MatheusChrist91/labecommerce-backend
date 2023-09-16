@@ -1,5 +1,26 @@
 import { TUser, TProduct } from './types'
 
+// FUNÇÕES PARA CRIAR NOVOS USUÁRIOS E PARA RETORNAR O ARRAY DE USUÁRIOS
+
+const createUser = (id:string, name:string, email:string, password:string, createdAt: string):{} => {
+    const newUser:TUser = {
+        id, 
+        name,
+        email,
+        password,
+        createdAt:new Date().toISOString()
+    }
+
+    users.push(newUser);
+
+    return newUser;
+}
+
+const getAllUsers = (): TUser[] => {
+    return users;
+}
+
+
 export const users: TUser[] = [
 
     {
@@ -19,12 +40,32 @@ export const users: TUser[] = [
     {
         id: 'u003',
         name: 'Ciclano',
-        email: 'Ciclano@email.com',
+        email: 'ciclano@email.com',
         password: 'Ciclano456',
         createdAt: new Date().toISOString()
     },    
 
 ]
+
+// FUNÇÕES PARA CRIAR UM NOVO PRODUTO E PARA RETORNAR O ARRAY DE PRODUTOS
+
+const createProduct = (id:string, name:string, price:number, description:string, imageUrl:string):{} => {
+    const newProduct:TProduct = {
+        id,
+        name, 
+        price, 
+        description, 
+        imageUrl 
+    }
+
+    products.push(newProduct);
+
+    return newProduct;
+}
+
+const getAllProducts = () => {
+    return products;
+}
 
 export const products: TProduct[] = [
 
@@ -44,3 +85,9 @@ export const products: TProduct[] = [
     },
 
 ] 
+
+// FUNÇÕES QUE BUSCAM USUÁRIO OU PRODUTO 
+
+const searchProductsByName = (name:string): TProduct[] => {
+    return products.filter((product) => product.name === name)
+}
