@@ -44,32 +44,48 @@ app.get("/users", (req: Request, res: Response) => {
 // BUSCA POR PRODUTO
 app.get("/products", (req: Request, res: Response) => {
   try {
-    const productByName: string | undefined = req.query.productByName as
-      | string
-      | undefined;
+    const result: TProduct[] = products;
 
-    if (typeof productByName === "undefined") {
-      res.status(200).send(products);
-      return;
+    res.status(200).send(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    } else {
+      res.send("Erro no produtos");
     }
-
-    if (typeof productByName === "string" && productByName.length < 2) {
-      res.statusCode = 404;
-      throw new Error(
-        "O nome do produto deve conter ao menos dois caracteres!"
-      );
-    }
-
-    const filterProduct: TProduct[] = products.filter(
-      (product) => product.name.toLowerCase() === productByName.toLowerCase()
-    );
-
-    res.status(200).send(filterProduct);
-  } catch (error: any) {
-    console.log(error);
-    res.status(400).send(error.message);
   }
 });
+
+// PROCURANDO PRODUTO POR QUERY
+
+app.get("/products/search", (req: Request, res: Response): void => {
+  try {
+    const query: string = req.query.q as string;
+
+    if (query.length === 0) {
+      res.statusCode = 404;
+      throw new Error("Query deve possuir pelo menos um caractere");
+    }
+
+    const productsByName: TProduct[] = products.filter((product) =>
+      product.name.toLowerCase().startsWith(query.toLowerCase())
+    );
+
+    if (productsByName.length === 0) {
+      res.statusCode = 404;
+      throw new Error(`Nenhum produto encontrado para a query "${query}"`);
+    }
+
+    res.status(200).send(productsByName);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    } else {
+      res.send("Erro: a query deve possuir pelo menos um caractere");
+    }
+  }
+});
+
 
 // CRIAR NOVO USUÁRIO
 app.post("/users", (req: Request, res: Response) => {
@@ -163,15 +179,17 @@ app.delete("/product/:id", (req: Request, res: Response) => {
     const indexDelet = products.findIndex((product) => product.id === id);
 
     if (indexDelet === -1) {
+      res.statusCode === 400
       throw new Error("Produto não encontrado!");
     }
 
     if (indexDelet >= 0) {
       products.splice(indexDelet, 1);
+      res.status(200).send("Produto foi deletado!")
     }
     res.status(200).send({ message: "O produto foi deletado com sucesso!" });
   } catch (error: any) {
-    res.status(400).send(error.message);
+    res.status(500).send(error.message);
   }
 });
 
@@ -202,7 +220,7 @@ app.put("/product/:id", (req: Request, res: Response) => {
     }
     if (typeof imageUrl !== "string") {
       res.statusCode = 400;
-      throw new Error("A URL do produto deve ser um link!");
+      throw new Error("A URL do produto deve ser um texto!");
     }
 
     product.name = name || product.name;
