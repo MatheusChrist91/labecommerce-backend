@@ -1,10 +1,8 @@
 -- Active: 1695689645650@@127.0.0.1@3306
 
-PRAGMA foreign_keys = ON;
-
 PRAGMA date_class = 'datetime';
 
--- Criação da tabela users
+-- CRIAÇÃO DA TABELA USERS
 
 CREATE TABLE
     users (
@@ -15,18 +13,20 @@ CREATE TABLE
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
--- Selecionar tabela users
+-- SELECINAR TABELA USERS
 
 SELECT * FROM users;
 
--- Deleta a tabela users
+-- DELETA A TABELA USERS
+
 DROP TABLE "users";
 
--- Deleta um usuário pelo ID --
-DELETE from users
-WHERE id = 'u004';
+-- DELETA UM USUÁRIO PELO ID --
 
--- Criação da tabela products
+DELETE FROM users WHERE id = 'u004';
+
+-- CRIAÇÃO DA TABELA PRODUCTS
+
 CREATE TABLE
     products (
         id TEXT PRIMARY KEY UNIQUE NOT NULL,
@@ -36,36 +36,37 @@ CREATE TABLE
         imageUrl TEXT NOT NULL
     );
 
--- Seleciona tabela products
+-- SELECIONA TABELA PRODUCTS --
+
 SELECT * FROM products;
 
--- Retorna produtos com um termo --
-SELECT * FROM products
-WHERE name = 'gamer';
+-- RETORNA UM PRODUTO COM UM QUERY --
 
+SELECT * FROM products WHERE name LIKE '%gamer%';
 
--- Deleta a tabela products
+-- DELETA TABELA PRODUCTS --
+
 DROP TABLE "products";
 
--- Deleta um produto pelo id --
-DELETE from products
-WHERE id = 'prod005';
+-- DELETA UM PRODUTO PELO ID --
 
--- Edita um produto pelo id --
+DELETE from products WHERE id = 'prod005';
+
+-- EDITA UM PRODUTO PELO ID --
+
 UPDATE products
-SET 
-name = 'newName',
-price = 99999.999,
-description = 'newDescription',
-imageUrl = 'newIage'
+SET
+    name = 'newName',
+    price = 99999.999,
+    description = 'newDescription',
+    imageUrl = 'newIage'
 WHERE id = 'prod006';
-
 
 PRAGMA table_info(users);
 
 PRAGMA table_info(products);
 
--- Criando três usuários novos --
+-- ADICIONANDO/POPULANDO USUÁRIOS A TABELA USERS --
 
 INSERT INTO
     users (
@@ -75,8 +76,7 @@ INSERT INTO
         password,
         created_at
     )
-VALUES
-(
+VALUES (
         'u004',
         'spilmaia',
         'spil_maia@email',
@@ -92,7 +92,7 @@ VALUES
         'farinkin_kop@email',
         '123qwe',
         strftime(
-            '%Y-%m-%d %H:%M:%S',
+            '%d-%m-%Y %H:%M:%S',
             'now',
             'localtime'
         )
@@ -106,7 +106,7 @@ VALUES
             'now',
             'localtime'
         )
-    ),(
+    ), (
         'u007',
         'Mr Splinter',
         'splinter_mr@email',
@@ -118,46 +118,95 @@ VALUES
         )
     );
 
--- Criando cinco produtos novos --
+-- ADICIONANDO/POPULANDO A TABELA PRODUCTS --
 
-INSERT INTO products (id, name, price, description, imageUrl)
-VALUES
-(
+INSERT INTO
+    products (
+        id,
+        name,
+        price,
+        description,
+        imageUrl
+    )
+VALUES (
         'prod004',
         'Echo Dot 5ª geração Amazon',
         359.99,
-        'Escuta tudo',
+        'Escuta tudo e não responde nada.',
         'https://picsum.photos/seed/Mouse%20gamer/400'
-    ),(
+    ), (
         'prod005',
         'Teclado Mecânico Gamer HyperX',
         429.99,
-        'Nem o Frank Aguiar tem um assim',
+        'Nem o Frank Aguiar tem um assim.',
         'https://picsum.photos/seed/Monitor/400'
-    ),(
+    ), (
         'prod006',
-        'Apple Watch S8',
-        5849.10,
-        'Prefiro gastar na RTX 4090Ti, pelo menos roda tudo',
-        'https://picsum.photos/seed/Mouse%20gamer/400'
-    ),(
-        'prod007',
-        'SSD 1TB Kingston KC3000',
-        549.99,
-        'Prova de que o dinheiro compra tempo',
-        'https://picsum.photos/seed/Monitor/400'
-    ),(
-        'prod008',
         'Placa de vídeo RTX 4090Ti',
         18.999,
-        'Roda tudo',
+        'Roda tudo.',
         'https://picsum.photos/seed/Mouse%20gamer/400'
-    ),(
+    ), (
+        'prod007',
+        'Apple Watch S8',
+        5849.10,
+        'Prefiro gastar na RTX 4090Ti, pelo menos roda tudo.',
+        'https://picsum.photos/seed/Mouse%20gamer/400'
+    ), (
+        'prod008',
+        'SSD 1TB Kingston KC3000',
+        549.99,
+        'Prova de que o dinheiro compra tempo.',
+        'https://picsum.photos/seed/Monitor/400'
+    ), (
         'prod009',
-        'Notebook gamer',
+        'Notebook Gamer',
         15699.99,
-        'Esquenta demais',
+        'Compra um desk porque notebook esquenta demais.',
         'https://picsum.photos/seed/Mouse%20gamer/400'
     );
 
+-- CRIAÇÃO DA TABELA DE PEDIDOS --
 
+CREATE TABLE
+    purchases (
+        id TEXT PRIMARY KEY UNIQUE NOT NULL,
+        buyer_id TEXT NOT NULL,
+        total_price REAL NOT NULL,
+        created_at DATETIME DEFAULT (
+            strftime(
+                '%Y-%m-%d %H:%M:%S',
+                'now',
+                'localtime'
+            )
+        ),
+        FOREIGN KEY (buyer_id) REFERENCES users(id)
+    );
+    -- SELECINA A TABELA PURCHASES --
+    SELECT * FROM purchases
+
+-- DELETA A TABELA PURCHASES --
+DROP TABLE purchases;
+
+-- POPULA A TABELA PURCHASES --
+INSERT INTO
+    purchases (id, buyer_id, total_price)
+VALUES ('pedido01', 'u004', 250.00), ('pedido02', 'u006', 80000);
+
+-- EDITAR O VALOR TOTAL DA COMPRA --
+
+UPDATE purchases SET total_price = 150 WHERE id = 'pedido01';
+
+UPDATE purchases SET total_price = 50000 WHERE id = 'pedido02';
+
+-- QUERY QUE CONSULTA UTILIZANDO JUNÇÃO PARA SIMULAR UM ENDPOINT DE INFORMAÇÕES DE UMA COMPRA ESPECÍFICA --
+
+SELECT
+    purchases.id AS purchase_id,
+    users.id AS user_id,
+    users.name AS user_name,
+    users.email as user_email,
+    purchases.total_price,
+    purchases.created_at
+FROM purchases
+INNER JOIN users ON purchases.buyer_id = users.id;
