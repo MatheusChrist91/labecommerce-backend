@@ -182,13 +182,17 @@ CREATE TABLE
         ),
         FOREIGN KEY (buyer_id) REFERENCES users(id)
     );
-    -- SELECINA A TABELA PURCHASES --
-    SELECT * FROM purchases
+
+-- SELECINA A TABELA PURCHASES --
+
+SELECT * FROM purchases 
 
 -- DELETA A TABELA PURCHASES --
+
 DROP TABLE purchases;
 
 -- POPULA A TABELA PURCHASES --
+
 INSERT INTO
     purchases (id, buyer_id, total_price)
 VALUES ('pedido01', 'u004', 250.00), ('pedido02', 'u006', 80000);
@@ -209,4 +213,33 @@ SELECT
     purchases.total_price,
     purchases.created_at
 FROM purchases
-INNER JOIN users ON purchases.buyer_id = users.id;
+    INNER JOIN users ON purchases.buyer_id = users.id;
+
+-- CRIAÇÃO DA TABELA QUE RELACIONA PRODUTOS E PEDIDOS --
+
+CREATE TABLE
+    purchases_products (
+        purchase_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON UPDATE CASCADE ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE
+    );
+
+-- SELECIONA TODA A TABELA PURCHASES_PRODUCTS --
+
+SELECT * FROM purchases_products;
+
+-- DELETA A TABELA PURCHASES_PRODUCTS --
+
+DROP TABLE purchases_products;
+
+INSERT INTO purchases_products
+VALUES ('pur001', 'prod005', 1), ('pur002', 'prod006', 10), ('pur003', 'prod007', 3);
+
+-- MOSTRAR EM UMA QUERY TODAS AS COLUNAS DAS TABELAS RELACIONADAS (purchases_products, purchases e products) --
+
+SELECT *
+FROM purchases_products
+    INNER JOIN purchases ON purchase_products.purchase_id = purchases.id
+    INNER JOIN products ON purchase_products.purchase_id = product.id;
