@@ -3,6 +3,7 @@ import cors from "cors";
 import { TUser, TProduct } from "./types";
 import { users, products } from "./database";
 import { throws } from "assert";
+import { db } from "./database/knex";
 
 /* console.log("Hello world!")
 console.table(users)
@@ -22,9 +23,11 @@ app.get("/ping", (req: Request, res: Response) => {
 });
 
 // BUSCA POR USUÁRIO
-app.get("/users", (req: Request, res: Response) => {
+app.get("/users", async (req: Request, res: Response) => {
   try {
-    const getAllUsers: TUser[] = users;
+    /* const getAllUsers: TUser[] = users; */
+
+    const getAllUsers: TUser[] = await db.raw(`SELECT * FROM users`);
 
     if (getAllUsers.length === 0) {
       throw new Error("Nenhum usuário foi encontrado!");
@@ -42,9 +45,10 @@ app.get("/users", (req: Request, res: Response) => {
 });
 
 // BUSCA POR PRODUTO
-app.get("/products", (req: Request, res: Response) => {
+app.get("/products", async (req: Request, res: Response) => {
   try {
-    const result: TProduct[] = products;
+    /* const result: TProduct[] = products; */
+    const result: TProduct[] = await db.raw(`SELECT * FROM products`)
 
     res.status(200).send(result);
   } catch (error) {
@@ -58,7 +62,7 @@ app.get("/products", (req: Request, res: Response) => {
 
 // PROCURANDO PRODUTO POR QUERY
 
-app.get("/products/search", (req: Request, res: Response): void => {
+app.get("/products/search", async (req, res) => {
   try {
     const query: string = req.query.q as string;
 
@@ -67,8 +71,10 @@ app.get("/products/search", (req: Request, res: Response): void => {
       throw new Error("Query deve possuir pelo menos um caractere");
     }
 
-    const productsByName: TProduct[] = products.filter((product) =>
-      product.name.toLowerCase().startsWith(query.toLowerCase())
+    const productsByName: TProduct[] = await db("products").where(
+      "name",
+      "like",
+      `%${query}%`
     );
 
     if (productsByName.length === 0) {
