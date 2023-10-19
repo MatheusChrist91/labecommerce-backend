@@ -46,7 +46,7 @@ app.get("/users", async (req: Request, res: Response) => {
 app.get("/products", async (req: Request, res: Response) => {
   try {
     /* const result: TProduct[] = products; */
-    const products: TProduct[] = await db.raw(`SELECT * FROM products`);
+    const result: TProduct[] = await db.raw(`SELECT * FROM products`)
 
     res.status(200).send(products);
   } catch (error) {
