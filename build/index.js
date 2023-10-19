@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -6,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const database_1 = require("./database");
+const knex_1 = require("./database/knex");
 /* console.log("Hello world!")
 console.table(users)
 console.table(products) */
@@ -19,9 +29,10 @@ app.get("/ping", (req, res) => {
     res.send("Pong!");
 });
 // BUSCA POR USUÁRIO
-app.get("/users", (req, res) => {
+app.get("/users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const getAllUsers = database_1.users;
+        /* const getAllUsers: TUser[] = users; */
+        const getAllUsers = yield knex_1.db.raw(`SELECT * FROM users`);
         if (getAllUsers.length === 0) {
             throw new Error("Nenhum usuário foi encontrado!");
         }
@@ -36,36 +47,32 @@ app.get("/users", (req, res) => {
             res.send(error.message);
         }
     }
-});
+}));
 // BUSCA POR PRODUTO
-app.get("/products", (req, res) => {
+app.get("/products", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const productByName = req.query.productByName;
-        if (typeof productByName === "undefined") {
-            res.status(200).send(database_1.products);
-            return;
-        }
-        if (typeof productByName === "string" && productByName.length > 2) {
-            res.statusCode = 400;
-            throw new Error("O nome do produto deve conter ao menos um caractere!");
-        }
-        const filterProduct = database_1.products.filter((product) => product.name.toLowerCase() === productByName.toLowerCase());
-        res.status(200).send(filterProduct);
+        /* const result: TProduct[] = products; */
+        const result = yield knex_1.db.raw(`SELECT * FROM products`);
+        res.status(200).send(result);
     }
     catch (error) {
-        console.log(error);
-        res.status(400).send(error.message);
+        if (error instanceof Error) {
+            res.send(error.message);
+        }
+        else {
+            res.send("Erro no produtos");
+        }
     }
-});
+}));
 // PROCURANDO PRODUTO POR QUERY
-app.get("/products/search", (req, res) => {
+app.get("/products/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const query = req.query.q;
         if (query.length === 0) {
             res.statusCode = 404;
             throw new Error("Query deve possuir pelo menos um caractere");
         }
-        const productsByName = database_1.products.filter((product) => product.name.toLowerCase().startsWith(query.toLowerCase()));
+        const productsByName = yield (0, knex_1.db)("products").where("name", "like", `%${query}%`);
         if (productsByName.length === 0) {
             res.statusCode = 404;
             throw new Error(`Nenhum produto encontrado para a query "${query}"`);
@@ -80,21 +87,31 @@ app.get("/products/search", (req, res) => {
             res.send("Erro: a query deve possuir pelo menos um caractere");
         }
     }
-});
+}));
 // CRIAR NOVO USUÁRIO
-app.post("/users", (req, res) => {
+app.post("/users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id, name, email, password, createdAt } = req.body;
-        const existingId = database_1.users.find((user) => user.id === id);
+        /* const existingId = users.find((user) => user.id === id);
         if (existingId) {
-            res.statusCode = 400;
-            throw new Error("Este 'id' já existe em nosso banco de dados");
-        }
-        const existingEmail = database_1.users.find((user) => user.email === email);
+          res.statusCode = 400;
+          throw new Error("Este 'id' já existe em nosso banco de dados");
+        } */
+        const [existingId] = yield knex_1.db.raw(`
+    SELECT id
+    FROM users
+    WHERE id = ?;
+    `, [id]);
+        /* const existingEmail = users.find((user) => user.email === email);
         if (existingEmail) {
-            res.statusCode = 400;
-            throw new Error("Este 'e-mail' já existe em nosso banco de dados");
-        }
+          res.statusCode = 400;
+          throw new Error("Este 'e-mail' já existe em nosso banco de dados");
+        } */
+        const [existingEmail] = yield knex_1.db.raw(`
+    SELECT email
+    FROM users
+    WHERE email = ?;
+    `, [email]);
         const newUser = {
             id,
             name,
@@ -109,7 +126,7 @@ app.post("/users", (req, res) => {
         console.log(error);
         res.send(error.message);
     }
-});
+}));
 // CRIAR NOVO PRODUTO
 app.post("/products", (req, res) => {
     try {
