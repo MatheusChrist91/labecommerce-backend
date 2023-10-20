@@ -1,4 +1,4 @@
--- Active: 1695689645650@@127.0.0.1@3306
+-- Active: 1697761455579@@127.0.0.1@3306
 
 PRAGMA date_class = 'datetime';
 
@@ -61,7 +61,7 @@ SET
     description = 'newDescription',
     imageUrl = 'newIage'
 WHERE id = 'prod006';
-
+''
 PRAGMA table_info(users);
 
 PRAGMA table_info(products);
@@ -219,7 +219,7 @@ FROM purchases
 
 -- CRIAÇÃO DA TABELA QUE RELACIONA PRODUTOS E PEDIDOS --
 
-CREATE TABLE
+
 CREATE TABLE
     purchases_products (
         purchase_id TEXT NOT NULL,
