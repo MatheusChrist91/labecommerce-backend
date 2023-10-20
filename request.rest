@@ -1,0 +1,17 @@
+GET http://localhost:3003/users
+###
+GET http://localhost:3003/products
+###
+GET http://localhost:3003/products/search?q=Apple Watch S8
+###
+# POST Request para criar um novo usuário
+POST http://localhost:3003/users
+Content-Type: application/json
+
+{
+  "id": "u003",
+  "name": "Astrodev",
+  "email": "astrodev@email.com",
+  "password": "astrodev00",
+  "createdAt": "2023-10-17T10:00:00"  # Certifique-se de fornecer uma data válida
+}
