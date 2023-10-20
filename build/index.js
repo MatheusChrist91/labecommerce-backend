@@ -14,11 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-const database_1 = require("./database");
+/* import { users, products } from "./database";
+import { throws } from "assert"; */
 const knex_1 = require("./database/knex");
-/* console.log("Hello world!")
-console.table(users)
-console.table(products) */
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
@@ -28,39 +26,35 @@ app.listen(3003, () => {
 app.get("/ping", (req, res) => {
     res.send("Pong!");
 });
-// BUSCA POR USUÁRIO
+// BUSCA POR TODOS OS USUÁRIOS
 app.get("/users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        /* const getAllUsers: TUser[] = users; */
-        const getAllUsers = yield knex_1.db.raw(`SELECT * FROM users`);
-        if (getAllUsers.length === 0) {
+        const users = yield knex_1.db.select("*").from("users");
+        if (users.length === 0) {
             throw new Error("Nenhum usuário foi encontrado!");
         }
-        res.status(200).send(getAllUsers);
+        res.status(200).send(users);
     }
     catch (error) {
-        console.log(error);
-        if (res.statusCode === 200) {
-            res.status(500);
-        }
-        else {
-            res.send(error.message);
+        if (error instanceof Error) {
+            res.status(500).send({ error: error.message });
         }
     }
 }));
 // BUSCA POR PRODUTO
 app.get("/products", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        /* const result: TProduct[] = products; */
-        const result = yield knex_1.db.raw(`SELECT * FROM products`);
-        res.status(200).send(result);
+        const products = yield knex_1.db.select("*").from("products");
+        res.status(200).send(products);
     }
     catch (error) {
         if (error instanceof Error) {
-            res.send(error.message);
+            res.status(500).send({ error: error.message });
         }
         else {
-            res.send("Erro no produtos");
+            res
+                .status(500)
+                .send({ error: "Ocorreu um erro na solicitação de produtos!" });
         }
     }
 }));
@@ -84,143 +78,232 @@ app.get("/products/search", (req, res) => __awaiter(void 0, void 0, void 0, func
             res.send(error.message);
         }
         else {
-            res.send("Erro: a query deve possuir pelo menos um caractere");
+            res.send("Ocorreu um erro na solicitação.");
         }
     }
 }));
 // CRIAR NOVO USUÁRIO
 app.post("/users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { id, name, email, password, createdAt } = req.body;
-        /* const existingId = users.find((user) => user.id === id);
-        if (existingId) {
-          res.statusCode = 400;
-          throw new Error("Este 'id' já existe em nosso banco de dados");
-        } */
-        const [existingId] = yield knex_1.db.raw(`
+        const { id, name, email, password } = req.body;
+        const [userId] = yield knex_1.db.raw(`
     SELECT id
     FROM users
     WHERE id = ?;
     `, [id]);
-        /* const existingEmail = users.find((user) => user.email === email);
-        if (existingEmail) {
-          res.statusCode = 400;
-          throw new Error("Este 'e-mail' já existe em nosso banco de dados");
-        } */
+        if (userId && userId.length > 0) {
+            res.statusCode = 400;
+            throw new Error("Este 'id' já existe em nosso banco de dados");
+        }
         const [existingEmail] = yield knex_1.db.raw(`
     SELECT email
     FROM users
     WHERE email = ?;
     `, [email]);
-        const newUser = {
-            id,
-            name,
-            email,
-            password,
-            createdAt,
-        };
-        database_1.users.push(newUser);
+        if (existingEmail && existingEmail.length > 0) {
+            res.statusCode = 400;
+            throw new Error("Este 'e-mail' já existe em nosso banco de dados");
+        }
+        yield knex_1.db.raw(`
+      INSERT INTO users (id, name, email, password)
+      VALUES (?, ?, ?, ?);
+    `, [id, name, email, password]);
         res.status(201).send("Cadastro realizado com sucesso!");
     }
     catch (error) {
-        console.log(error);
-        res.send(error.message);
+        if (error instanceof Error) {
+            res.send(error.message);
+        }
     }
 }));
 // CRIAR NOVO PRODUTO
-app.post("/products", (req, res) => {
+app.post("/products", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id, name, price, description, imageUrl } = req.body;
-        const existingId = database_1.products.find((product) => product.id === id);
-        if (existingId) {
-            throw new Error("Este 'id' deste produto já existe em nosso banco de dados");
+        const [productId] = yield knex_1.db.raw(`
+      SELECT id
+      FROM products
+      WHERE id = ?;
+    `, [id]);
+        if (productId > 0) {
+            res.statusCode = 400;
+            throw new Error('Este "id" já existe em nosso banco de dados!');
         }
-        const newProduct = {
-            id,
-            name,
-            price,
-            description,
-            imageUrl,
-        };
-        database_1.products.push(newProduct);
+        yield knex_1.db.raw(`
+      INSERT INTO products (id, name, price, description, imageUrl)
+      VALUES ("${id}", "${name}", "${price}", "${description}", "${imageUrl}")`);
         res.status(201).send("Produto cadastrado com sucesso!");
     }
     catch (error) {
-        console.log(error);
         res.status(400).send(error.message);
     }
-});
+}));
 // DELETA UM USUÁRIO A PARTIR DO ID PASSADO EM PATH VARIABLES
-app.delete("/user/:id", (req, res) => {
+app.delete("/user/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = req.params.id;
-        const indexDelete = database_1.users.findIndex((user) => user.id === id);
-        if (indexDelete === -1) {
-            res.statusCode = 400;
-            throw new Error("Usuário não encontrado!");
+        const user = yield (0, knex_1.db)("users").where("id", id).first();
+        if (!user) {
+            res.status(400).send("Usuário não encontrado!");
+            return;
         }
-        if (indexDelete >= 0) {
-            database_1.users.splice(indexDelete, 1);
-            res.status(200).send("Usuário deletado com sucesso!");
-        }
+        yield (0, knex_1.db)("users").where("id", id).del();
+        res.status(200).send("O usuário foi deletado com sucesso");
     }
     catch (error) {
-        console.log(error);
         res.status(500).send(error.message);
     }
-});
+}));
 // DELETA UM PRODUTO A PARTIR DO ID PASSADO EM PATH VARIABLES
-app.delete("/product/:id", (req, res) => {
+app.delete("/product/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = req.params.id;
-        const indexDelet = database_1.products.findIndex((product) => product.id === id);
-        if (indexDelet === -1) {
-            res.statusCode === 400;
-            throw new Error("Produto não encontrado!");
+        const [product] = yield knex_1.db.raw("SELECT * FROM products WHERE id = ?", [id]);
+        if (product.length === 0) {
+            res.statusCode = 400;
+            throw new Error('O "id" deste produto não foi encontrado em nosso banco de dados!');
         }
-        if (indexDelet >= 0) {
-            database_1.products.splice(indexDelet, 1);
-            res.status(200).send("Produto foi deletado!");
-        }
+        yield knex_1.db.raw("DELETE FROM products WHERE id = ?", [id]);
         res.status(200).send({ message: "O produto foi deletado com sucesso!" });
     }
     catch (error) {
         res.status(500).send(error.message);
     }
-});
+}));
 // EDITA UM PRODUTO BASEADO NO ID DO PRODUTO
-app.put("/product/:id", (req, res) => {
+app.put("/product/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const id = req.params.id;
-        const product = database_1.products.find((product) => product.id === id);
-        if (!product) {
-            res.statusCode = 400;
+        const { name, price, description, imageUrl } = req.body;
+        const [product] = yield knex_1.db.raw("SELECT * FROM products WHERE id = ?", [id]);
+        if (product && product.length === 0) {
+            res.statusCode = 404;
             throw new Error("Produto não encontrado!");
         }
-        const { name, price, description, imageUrl } = req.body;
-        if (typeof name !== "string") {
+        if (name && (name === null || name === void 0 ? void 0 : name.length) === 0) {
             res.statusCode = 400;
-            throw new Error("O nome do produto deve ser um texto!");
+            throw new Error("O nome deve ter no mínimo 1 caractere!");
         }
-        if (typeof price !== "number") {
+        if (typeof price === "number" && price < 0 && price !== undefined) {
             res.statusCode = 400;
-            throw new Error("O preço do produto deve ser um número!");
+            throw new Error("O preço deve ser um número e deve ser maior que 0!");
         }
-        if (typeof description !== "string") {
+        if (description && description.length === 0) {
             res.statusCode = 400;
-            throw new Error("A descrição do produto deve ser um texto!");
+            throw new Error("A descrição deve conter ao menos 1 caractere!");
         }
         if (typeof imageUrl !== "string") {
             res.statusCode = 400;
             throw new Error("A URL do produto deve ser um texto!");
         }
-        product.name = name || product.name;
-        product.price = price || product.price;
-        product.description = description || product.description;
-        product.imageUrl = imageUrl || product.imageUrl;
+        const [newProduct] = yield knex_1.db.raw(`SELECT * FROM products WHERE id = "${id}"`);
+        if (newProduct) {
+            yield knex_1.db.raw(`
+      UPDATE products SET
+      name = "${name || newProduct.name}",
+      price = "${price || newProduct.price}",
+      description = "${description || newProduct.description}",
+      imageUrl = "${imageUrl || newProduct.imageUrl}"
+      WHERE id = "${id}"
+      `);
+        }
         res.status(200).send({ message: "Produto atualizado com sucesso!" });
     }
     catch (error) {
         res.status(500).send(error.message);
     }
-});
+}));
+// CADASTRA UM NOVO PEDIDO
+app.post("/purchases", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id, buyer_id, total_price } = req.body;
+        if (typeof id !== "string" || id.length < 4) {
+            res.statusCode = 404;
+            throw new Error('O campo "id" é obrigatório!');
+        }
+        if (typeof buyer_id !== "string" || buyer_id.length < 3) {
+            res.statusCode = 404;
+            throw new Error('O campo do "buyer id" é obrigatório');
+        }
+        if (typeof total_price !== "number" || total_price <= 1) {
+            res.statusCode = 404;
+            throw new Error('O campo do "preço" é obrigatório');
+        }
+        const isPurchase = yield knex_1.db.raw(`INSERT INTO purchases
+    (id, buyer_id, total_price)
+    VALUES("${id}", "${buyer_id}", "${total_price}")
+    `);
+        res.status(200).send("Produto cadastrado com sucesso!");
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            res.send(error.message);
+        }
+    }
+}));
+// RETORNA OS DADOS DE UMA COMPRA, INCLUINDO A LISTA DE PRODUTOS DA MESMA
+app.get('/purchases/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        const [purchaseId] = yield knex_1.db.raw('SELECT * FROM purchases WHERE id = ?', [id]);
+        if (!purchaseId || purchaseId.length === 0) {
+            throw new Error('Nenhuma compra foi encontrada com este "id"!');
+        }
+        const userDataBuyer = yield knex_1.db.raw(`
+      SELECT
+        purchases.id AS purchaseId,
+        purchases.buyer_id AS buyerId,
+        users.name AS buyerName,
+        users.email AS buyerEmail,
+        purchases.total_price AS totalPrice,
+        purchases.created_at AS createdAt
+      FROM purchases
+      INNER JOIN users ON purchases.buyer_id = users.id
+      WHERE purchases.id = ?
+    `, [id]);
+        const products = yield knex_1.db.raw(`
+      SELECT
+        purchases_products.product_id AS id,
+        products.name,
+        products.price,
+        products.description,
+        products.imageUrl,
+        purchases_products.quantity
+      FROM purchases_products
+      INNER JOIN products ON products.id = purchases_products.product_id
+      WHERE purchases_products.purchase_id = ?
+    `, [id]);
+        const result = Object.assign(Object.assign({}, userDataBuyer[0][0]), { products: products[0] });
+        res.status(200).send(result);
+    }
+    catch (error) {
+        console.log(error);
+        if (req.statusCode === 200) {
+            res.status(500);
+        }
+        if (error instanceof Error) {
+            res.send(error.message);
+        }
+        else {
+            res.send('Erro inesperado');
+        }
+    }
+}));
+// DELETA UM PEDIDO EXISTENTE
+app.delete("/purchases/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.params.id;
+        // Verifica se a compra existe
+        const purchase = yield (0, knex_1.db)("purchases").where("id", id).first();
+        if (!purchase) {
+            res.status(404).send({ error: 'Compra não encontrada!' });
+            return;
+        }
+        // Exclui a compra
+        yield (0, knex_1.db)("purchases").where("id", id).del();
+        res.status(200).send({ message: 'A compra foi excluída com sucesso!' });
+    }
+    catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+}));
