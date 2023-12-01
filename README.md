@@ -18,6 +18,7 @@ npm install
 
 Inicie o servidor:
 npm start
+
 O servidor estará em execução na porta 3003.
 
 ### Documentação
